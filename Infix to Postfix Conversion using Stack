@@ -1,0 +1,131 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
+
+#define MAX 100
+
+// Stack definition
+typedef struct {
+    int top;
+    char items[MAX];
+} Stack;
+
+void initStack(Stack *s) {
+    s->top = -1;
+}
+
+int isEmpty(Stack *s) {
+    return s->top == -1;
+}
+
+int isFull(Stack *s) {
+    return s->top == MAX - 1;
+}
+
+void push(Stack *s, char c) {
+    if (isFull(s)) {
+        printf("Stack Overflow\n");
+        return;
+    }
+    s->items[++(s->top)] = c;
+}
+
+char pop(Stack *s) {
+    if (isEmpty(s)) {
+        return '\0';
+    }
+    return s->items[(s->top)--];
+}
+
+char peek(Stack *s) {
+    if (isEmpty(s)) {
+        return '\0';
+    }
+    return s->items[s->top];
+}
+
+// Return operator precedence
+int precedence(char op) {
+    switch (op) {
+        case '^':
+            return 3;
+        case '*':
+        case '/':
+            return 2;
+        case '+':
+        case '-':
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+// Check if operator is right-associative
+int isRightAssociative(char op) {
+    return op == '^';
+}
+
+void infixToPostfix(const char *infix, char *postfix) {
+    Stack s;
+    initStack(&s);
+    int k = 0;
+
+    for (int i = 0; infix[i] != '\0'; i++) {
+        char ch = infix[i];
+
+        // Ignore whitespace
+        if (isspace(ch)) {
+            continue;
+        }
+
+        // 1. If operand, add directly to output
+        if (isalnum(ch)) {
+            postfix[k++] = ch;
+        }
+        // 2. If '(', push to stack
+        else if (ch == '(') {
+            push(&s, ch);
+        }
+        // 3. If ')', pop until '('
+        else if (ch == ')') {
+            while (!isEmpty(&s) && peek(&s) != '(') {
+                postfix[k++] = pop(&s);
+            }
+            pop(&s); // Remove '(' from stack
+        }
+        // 4. Operator encountered
+        else {
+            while (!isEmpty(&s) && peek(&s) != '(') {
+                int precCurrent = precedence(ch);
+                int precTop = precedence(peek(&s));
+
+                if (precTop > precCurrent || (precTop == precCurrent && !isRightAssociative(ch))) {
+                    postfix[k++] = pop(&s);
+                } else {
+                    break;
+                }
+            }
+            push(&s, ch);
+        }
+    }
+
+    // Pop any remaining operators
+    while (!isEmpty(&s)) {
+        postfix[k++] = pop(&s);
+    }
+
+    postfix[k] = '\0'; // Null-terminate string
+}
+
+int main() {
+    char infix[] = "a+b*(c^d-e)^(f+g*h)-i";
+    char postfix[MAX];
+
+    infixToPostfix(infix, postfix);
+
+    printf("Infix Expression:   %s\n", infix);
+    printf("Postfix Expression: %s\n", postfix);
+
+    return 0;
+}
